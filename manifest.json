@@ -1,0 +1,19 @@
+{
+  "manifest_version": 3,
+  "name": "Pronote Class Canceller",
+  "version": "1.1",
+  "description": "Visually cancels a class in Pronote.",
+  "content_scripts": [
+    {
+      "matches": ["*://*.index-education.net/pronote/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["injected.js"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}

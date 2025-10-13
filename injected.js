@@ -12,6 +12,28 @@
 
     const STORAGE_KEY = 'cancelledClasses';
 
+    function GetLanguage() {
+        const lang = document.documentElement.lang;
+        if (lang && lang !== "en") {
+            return false
+        }
+        return true
+    }
+
+    function CheckLanguage() {
+        const lg = document.documentElement.lang;
+        if (lg && lg == "fr") {
+            console.error("Veuillez changer la langue de Pronote dans 'Mes données > Compte > Préférences > Style et accessibilité > Personnalisation > Language > English'\nCe programme est toujours en cours de développement et ne supporte que la version anglaise pour le moment (car c'est plus simple.).\nL'adaptation automatique pour les autres langues sera ajoutée lorsque le programme sera entièrement terminé.");
+            return;
+        } else if (lg && lg == "it") {
+            console.error("Modifica la lingua di Pronote in 'I miei dati > Account > Preferenze > Stile e accessibilità > Personalizzazione > Lingua > English'\nQuesto programma è ancora in fase di sviluppo e al momento supporta solo la versione inglese (per semplicità).\nL'adattamento automatico per le altre lingue verrà aggiunto quando il programma sarà completamente terminato.");
+            return;
+        } else if (lg && lg == "es") {
+            console.error("Cambia el idioma de Pronote en 'Mis datos > Cuenta > Preferencias > Estilo y accesibilidad > Personalización> Lengua > English'. Este programa aún se encuentra en fase de desarrollo y, por el momento, solo admite la versión en inglés (por simplicidad).\nLa adaptación automática para otros idiomas se añadirá cuando el programa esté completamente terminado.");
+            return;
+        }
+    }
+
     async function getPing() {
         const start = performance.now();
         await fetch(window.location.origin + '/favicon.ico');
@@ -131,6 +153,8 @@
     }
 
     window.addEventListener('load', () => {
+        CheckLanguage();
+        if (!GetLanguage()) {return;}
         const checkLoaded = setInterval(() => {
             const classes = document.querySelectorAll('.liste-cours > li');
             if (classes.length > 0) {
@@ -141,6 +165,7 @@
     });
 
     const observer = new MutationObserver(() => {
+        if (!GetLanguage()) {return;}
         const left = document.querySelector('.icon_angle_left');
         const right = document.querySelector('.icon_angle_right');
 
@@ -168,6 +193,7 @@
     observer.observe(document.body, { childList: true, subtree: true });
     // Home button
     document.body.addEventListener('click', function (e) {
+        if (!GetLanguage()) {return;}
         const homeBtn = e.target.closest('#GInterface\\.Instances\\[0\\]\\.Instances\\[3\\]_Combo0');
         if (!homeBtn) return;
 
@@ -180,8 +206,9 @@
         }, 40);
     });
 
-    // CancelClass (daily view)
+    // daily view
     window.CancelClass = function (classNumber) {
+        CheckLanguage();
         if (!classNumber && classNumber !== 0) {
             console.warn("You need to specify a number corresponding to the class's order place.");
             return;
@@ -210,7 +237,7 @@
         }
     };
 
-    // CancelClass2 (weekly view - requirement system only)
+    // weekly view
     window.CancelClass2 = function (day, period) {
         const inStudentAdmin = document.querySelector('.item-selected .label-submenu');
         if (!inStudentAdmin || !inStudentAdmin.textContent.includes('Timetable')) {

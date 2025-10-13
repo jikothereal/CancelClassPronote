@@ -130,6 +130,16 @@
         });
     }
 
+    window.addEventListener('load', () => {
+        const checkLoaded = setInterval(() => {
+            const classes = document.querySelectorAll('.liste-cours > li');
+            if (classes.length > 0) {
+                clearInterval(checkLoaded);
+                applySavedCancellations();
+            }
+        }, 100);
+    });
+
     const observer = new MutationObserver(() => {
         const left = document.querySelector('.icon_angle_left');
         const right = document.querySelector('.icon_angle_right');

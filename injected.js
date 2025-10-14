@@ -23,7 +23,7 @@
     function CheckLanguage() {
         const lg = document.documentElement.lang;
         if (lg && lg == "fr") {
-            console.error("Veuillez changer la langue de Pronote dans 'Mes données > Compte > Préférences > Style et accessibilité > Personnalisation > Language > English'\nCe programme est toujours en cours de développement et ne supporte que la version anglaise pour le moment (car c'est plus simple.).\nL'adaptation automatique pour les autres langues sera ajoutée lorsque le programme sera entièrement terminé.");
+            console.error("Veuillez changer la langue de Pronote dans 'Mes données > Compte > Préférences > Style et accessibilité > Personnalisation > Langue > English'\nCe programme est toujours en cours de développement et ne supporte que la version anglaise pour le moment (car c'est plus simple.).\nL'adaptation automatique pour les autres langues sera ajoutée lorsque le programme sera entièrement terminé.");
             return;
         } else if (lg && lg == "it") {
             console.error("Modifica la lingua di Pronote in 'I miei dati > Account > Preferenze > Stile e accessibilità > Personalizzazione > Lingua > English'\nQuesto programma è ancora in fase di sviluppo e al momento supporta solo la versione inglese (per semplicità).\nL'adattamento automatico per le altre lingue verrà aggiunto quando il programma sarà completamente terminato.");

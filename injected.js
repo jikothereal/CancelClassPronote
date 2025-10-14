@@ -168,6 +168,7 @@
         if (!GetLanguage()) {return;}
         const left = document.querySelector('.icon_angle_left');
         const right = document.querySelector('.icon_angle_right');
+        const sad = document.querySelector('.icon_fermeture_widget');
 
         if (left && !left.dataset.patched) {
             left.addEventListener('click', async () => {
@@ -187,6 +188,16 @@
                 applySavedCancellations();
             });
             right.dataset.patched = 'true';
+        }
+
+        if (sad && !sad.dataset.patched) {
+            sad.addEventListener('click', async () => {
+                console.info("S.A.D's close button click successfully detected");
+                const pingSAD = await getPing();
+                console.log(pingSAD);
+                applySavedCancellations();
+            });
+            sad.dataset.patched = 'true';
         }
     });
 

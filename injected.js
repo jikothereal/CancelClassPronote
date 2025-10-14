@@ -169,10 +169,11 @@
         const left = document.querySelector('.icon_angle_left');
         const right = document.querySelector('.icon_angle_right');
         const sad = document.querySelector('.icon_fermeture_widget');
+        const sadclose = document.querySelector('.themeBoutonSecondaire');
 
         if (left && !left.dataset.patched) {
             left.addEventListener('click', async () => {
-                console.info("left arrow click successfully detected");
+                console.info("left arrow click detected");
                 const pingLeft = await getPing();
                 console.log(pingLeft);
                 applySavedCancellations();
@@ -182,7 +183,7 @@
 
         if (right && !right.dataset.patched) {
             right.addEventListener('click', async () => {
-                console.info("right arrow click successfully detected");
+                console.info("right arrow click detected");
                 const pingRight = await getPing();
                 console.log(pingRight);
                 applySavedCancellations();
@@ -192,12 +193,22 @@
 
         if (sad && !sad.dataset.patched) {
             sad.addEventListener('click', async () => {
-                console.info("S.A.D's close button click successfully detected");
+                console.info("S.A.D's cross button click detected");
                 const pingSAD = await getPing();
                 console.log(pingSAD);
                 applySavedCancellations();
             });
             sad.dataset.patched = 'true';
+        }
+
+        if (sadclose && !sadclose.dataset.patched) {
+            sadclose.addEventListener('click', async () => {
+                console.info("S.A.D's close button click detected");
+                const pingSAD2 = await getPing();
+                console.log(pingSAD2);
+                applySavedCancellations();
+            });
+            sadclose.dataset.patched = 'true';
         }
     });
 

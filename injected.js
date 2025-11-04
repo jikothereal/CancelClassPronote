@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         Pronote Prof Absent Toggle
+// @name         Pronote Class Cancellation
 // @namespace    http://tampermonkey.net/
-// @version      1.2
-// @description  Toggle a class as cancelled and restore original if toggled back, based on unique span text and date.
+// @version      2.0
+// @description  Toggle class cancellation.
 // @match        *://*/*
 // @grant        none
 // ==/UserScript==
@@ -11,252 +11,182 @@
     'use strict';
 
     const STORAGE_KEY = 'cancelledClasses';
+    const STORAGE_KEY_V2 = 'cancelledClassesV2';
 
     function GetLanguage() {
-        const lang = document.documentElement.lang;
-        if (lang && lang !== "en") {
-            return false
-        }
-        return true
+        return document.documentElement.lang === "en";
     }
 
     function CheckLanguage() {
-        const lg = document.documentElement.lang;
-        if (lg && lg == "fr") {
-            console.error("Veuillez changer la langue de Pronote dans 'Mes données > Compte > Préférences > Style et accessibilité > Personnalisation > Langue > English'\nCe programme est toujours en cours de développement et ne supporte que la version anglaise pour le moment (car c'est plus simple.).\nL'adaptation automatique pour les autres langues sera ajoutée lorsque le programme sera entièrement terminé.");
-            return;
-        } else if (lg && lg == "it") {
-            console.error("Modifica la lingua di Pronote in 'I miei dati > Account > Preferenze > Stile e accessibilità > Personalizzazione > Lingua > English'\nQuesto programma è ancora in fase di sviluppo e al momento supporta solo la versione inglese (per semplicità).\nL'adattamento automatico per le altre lingue verrà aggiunto quando il programma sarà completamente terminato.");
-            return;
-        } else if (lg && lg == "es") {
-            console.error("Cambia el idioma de Pronote en 'Mis datos > Cuenta > Preferencias > Estilo y accesibilidad > Personalización> Lengua > English'. Este programa aún se encuentra en fase de desarrollo y, por el momento, solo admite la versión en inglés (por simplicidad).\nLa adaptación automática para otros idiomas se añadirá cuando el programa esté completamente terminado.");
-            return;
-        }
-    }
-
-    async function getPing() {
-        const start = performance.now();
-        await fetch(window.location.origin + '/favicon.ico');
-        return performance.now() - start;
+        const lang = document.documentElement.lang;
+        const messages = {
+            fr: "Veuillez changer la langue de Pronote dans 'Mes données > Compte > Préférences > Style et accessibilité > Personnalisation > Langue > English'.",
+            it: "Modifica la lingua di Pronote in 'I miei dati > Account > Preferenze > Stile e accessibilità > Personalizzazione > Lingua > English'.",
+            es: "Cambia el idioma de Pronote en 'Mis datos > Cuenta > Preferencias > Estilo y accesibilidad > Personalización> Lengua > English'."
+        };
+        if (lang && messages[lang]) console.error(messages[lang]);
     }
 
     function getCurrentDateString() {
         const dateEl = document.querySelector('.ocb-libelle');
         if (!dateEl) return null;
         const raw = dateEl.textContent.trim();
-
         const today = new Date();
         const options = { day: '2-digit', month: 'short' };
 
-        if (raw === 'Today') {
-            return today.toLocaleDateString('en-GB', options).replace(/^0/, '');
-        } else if (raw === 'Yesterday') {
-            today.setDate(today.getDate() - 1);
-            return today.toLocaleDateString('en-GB', options).replace(/^0/, '');
-        } else if (raw === 'Tomorrow') {
-            today.setDate(today.getDate() + 1);
-            return today.toLocaleDateString('en-GB', options).replace(/^0/, '');
-    } else {
+        if (raw === 'Today') return today.toLocaleDateString('en-GB', options).replace(/^0/, '');
+        if (raw === 'Yesterday') { today.setDate(today.getDate() - 1); return today.toLocaleDateString('en-GB', options).replace(/^0/, ''); }
+        if (raw === 'Tomorrow') { today.setDate(today.getDate() + 1); return today.toLocaleDateString('en-GB', options).replace(/^0/, ''); }
+
         const parts = raw.split('\u00a0');
-        if (parts.length >= 2) {
-            if (parts.length == 2) {
-                return parts[0] + ' ' + parts[1];
-            } else {
-                return parts[1] + ' ' + parts[2];
-            }
-        }
-    }
-    return null;
+        if (parts.length >= 2) return parts.length === 2 ? parts[0] + ' ' + parts[1] : parts[1] + ' ' + parts[2];
+        return null;
     }
 
-    function getUniqueClassKey(item) {
+    function getSaved(key, storageKey) {
+        return JSON.parse(localStorage.getItem(storageKey) || '{}')[key] || null;
+    }
+
+    function saveData(key, value, storageKey) {
+        const saved = JSON.parse(localStorage.getItem(storageKey) || '{}');
+        saved[key] = value;
+        localStorage.setItem(storageKey, JSON.stringify(saved));
+    }
+
+    function removeData(key, storageKey) {
+        const saved = JSON.parse(localStorage.getItem(storageKey) || '{}');
+        delete saved[key];
+        localStorage.setItem(storageKey, JSON.stringify(saved));
+    }
+
+    // Universal DOM watcher
+    function startWatching(selector, callback, options = {}) {
+        const pollInterval = options.pollInterval || 300;
+        let currentNode = null;
+        let innerObserver = null;
+        let stopped = false;
+
+        function attachTo(node) {
+            if (!node) return;
+            if (innerObserver) innerObserver.disconnect();
+            innerObserver = new MutationObserver(() => setTimeout(() => callback(node), 0));
+            innerObserver.observe(node, { childList: true, characterData: true, subtree: true });
+            callback(node);
+            currentNode = node;
+        }
+
+        function detachInner() {
+            if (innerObserver) innerObserver.disconnect();
+            innerObserver = null;
+            currentNode = null;
+        }
+
+        const docObserver = new MutationObserver(() => {
+            if (stopped) return;
+            if (currentNode && !document.contains(currentNode)) detachInner();
+            if (!currentNode) {
+                const found = document.querySelector(selector);
+                if (found) attachTo(found);
+            }
+        });
+
+        docObserver.observe(document.documentElement || document.body, { childList: true, subtree: true });
+
+        const poller = setInterval(() => {
+            if (stopped) return;
+            if (!currentNode) {
+                const found = document.querySelector(selector);
+                if (found) attachTo(found);
+            }
+        }, pollInterval);
+
+        const initial = document.querySelector(selector);
+        if (initial) attachTo(initial);
+
+        return { stop() { stopped = true; detachInner(); docObserver.disconnect(); clearInterval(poller); } };
+    }
+
+    // Toggle daily view class
+    function toggleCancel(item) {
         const span = item.querySelector('span.sr-only');
         const dateStr = getCurrentDateString();
-        return (span && dateStr) ? `${span.textContent.trim()}|${dateStr}` : null;
-    }
+        if (!span || !dateStr) return;
+        const key = `${span.textContent.trim()}|${dateStr}`;
+        const container = item.querySelector('.container-etiquette');
+        const isCancelled = container && container.textContent.includes('Prof. absent');
 
-    function saveCancelledClass(key, originalEtiquetteHTML) {
-        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-        saved[key] = originalEtiquetteHTML;
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
-    }
-
-    function removeCancelledClass(key) {
-        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-        delete saved[key];
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
-    }
-
-    function getSavedCancellations() {
-        return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-    }
-
-    function toggleCancel(item) {
-        
-        const key = getUniqueClassKey(item);
-        if (!key) return;
-
-        const etiquetteContainer = item.querySelector('.container-etiquette');
-        const isAlreadyCancelled = etiquetteContainer && etiquetteContainer.textContent.includes('Prof. absent');
-
-        if (isAlreadyCancelled) {
-            const saved = getSavedCancellations();
-            if (key in saved) {
-                etiquetteContainer.innerHTML = saved[key];
+        if (isCancelled) {
+            const saved = getSaved(key, STORAGE_KEY);
+            if (saved) {
+                container.innerHTML = saved;
                 item.classList.remove("cours-annule");
-                removeCancelledClass(key);
+                removeData(key, STORAGE_KEY);
             }
             return;
         }
 
-        const originalHTML = etiquetteContainer ? etiquetteContainer.innerHTML : '';
-        saveCancelledClass(key, originalHTML);
-
+        const originalHTML = container ? container.innerHTML : '';
+        saveData(key, originalHTML, STORAGE_KEY);
         item.classList.add("cours-annule");
-        if (!etiquetteContainer) {
+
+        if (!container) {
             const ulCours = item.querySelector(".container-cours");
             const absentLi = document.createElement("li");
             absentLi.className = "container-etiquette";
             ulCours.appendChild(absentLi);
         }
-        const container = item.querySelector('.container-etiquette');
-        container.innerHTML = '<div class="m-left-s tag-style ie-chips gd-red-foncee">Prof. absent</div>';
+
+        const containerUpdated = item.querySelector('.container-etiquette');
+        containerUpdated.innerHTML = '<div class="m-left-s tag-style ie-chips gd-red-foncee">Prof. absent</div>';
     }
 
     function applySavedCancellations() {
-        const saved = getSavedCancellations();
+        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
         const currentDate = getCurrentDateString();
-        console.info(saved);
+        if (!currentDate) return;
 
         document.querySelectorAll('.liste-cours > li').forEach(item => {
             const span = item.querySelector('span.sr-only');
-            if (!span || !currentDate) return;
-
+            if (!span) return;
             const key = `${span.textContent.trim()}|${currentDate}`;
-            console.info(key);
             if (!(key in saved)) return;
 
-            const etiquetteContainer = item.querySelector('.container-etiquette');
-            const isAlreadyCancelled = etiquetteContainer && etiquetteContainer.textContent.includes('Prof. absent');
-            if (isAlreadyCancelled) return;
+            const container = item.querySelector('.container-etiquette');
+            if (container && container.textContent.includes('Prof. absent')) return;
 
             item.classList.add("cours-annule");
-            if (!etiquetteContainer) {
+            if (!container) {
                 const ulCours = item.querySelector(".container-cours");
                 const absentLi = document.createElement("li");
                 absentLi.className = "container-etiquette";
                 ulCours.appendChild(absentLi);
             }
-            const container = item.querySelector('.container-etiquette');
-            container.innerHTML = '<div class="m-left-s tag-style ie-chips gd-red-foncee">Prof. absent</div>';
+            item.querySelector('.container-etiquette').innerHTML = '<div class="m-left-s tag-style ie-chips gd-red-foncee">Prof. absent</div>';
         });
     }
 
-    window.addEventListener('load', () => {
+    // Daily classes watcher
+    startWatching('.liste-cours', () => {
+        if (!GetLanguage()) return;
+        applySavedCancellations();
+    });
+
+    // Home / navigation clicks watcher
+    startWatching('body', () => {
+        document.querySelectorAll('.icon_angle_left, .icon_angle_right, .icon_fermeture_widget, .themeBoutonSecondaire').forEach(el => {
+            if (el.dataset.patched) return;
+            el.addEventListener('click', applySavedCancellations);
+            el.dataset.patched = 'true';
+        });
+    });
+
+    // Expose for manual toggling
+    window.CancelClass = function (index) {
         CheckLanguage();
-        if (!GetLanguage()) {return;}
-        const checkLoaded = setInterval(() => {
-            const classes = document.querySelectorAll('.liste-cours > li');
-            if (classes.length > 0) {
-                clearInterval(checkLoaded);
-                applySavedCancellations();
-            }
-        }, 100);
-    });
-
-    const observer = new MutationObserver(() => {
-        if (!GetLanguage()) {return;}
-        const left = document.querySelector('.icon_angle_left');
-        const right = document.querySelector('.icon_angle_right');
-        const sad = document.querySelector('.icon_fermeture_widget');
-        const sadclose = document.querySelector('.themeBoutonSecondaire');
-
-        if (left && !left.dataset.patched) {
-            left.addEventListener('click', async () => {
-                console.info("left arrow click detected");
-                const pingLeft = await getPing();
-                console.log(pingLeft);
-                applySavedCancellations();
-            });
-            left.dataset.patched = 'true';
-        }
-
-        if (right && !right.dataset.patched) {
-            right.addEventListener('click', async () => {
-                console.info("right arrow click detected");
-                const pingRight = await getPing();
-                console.log(pingRight);
-                applySavedCancellations();
-            });
-            right.dataset.patched = 'true';
-        }
-
-        if (sad && !sad.dataset.patched) {
-            sad.addEventListener('click', async () => {
-                console.info("S.A.D's cross button click detected");
-                const pingSAD = await getPing();
-                console.log(pingSAD);
-                applySavedCancellations();
-            });
-            sad.dataset.patched = 'true';
-        }
-
-        if (sadclose && !sadclose.dataset.patched) {
-            sadclose.addEventListener('click', async () => {
-                console.info("S.A.D's close button click detected");
-                const pingSAD2 = await getPing();
-                console.log(pingSAD2);
-                applySavedCancellations();
-            });
-            sadclose.dataset.patched = 'true';
-        }
-    });
-
-    observer.observe(document.body, { childList: true, subtree: true });
-    // Home button
-    document.body.addEventListener('click', function (e) {
-        if (!GetLanguage()) {return;}
-        const homeBtn = e.target.closest('#GInterface\\.Instances\\[0\\]\\.Instances\\[3\\]_Combo0');
-        if (!homeBtn) return;
-
-        const checkLoaded = setInterval(() => {
-            const classes = document.querySelectorAll('.liste-cours > li');
-            if (classes.length > 0) {
-                clearInterval(checkLoaded);
-                applySavedCancellations();
-            }
-        }, 40);
-    });
-
-    // daily view
-    window.CancelClass = function (classNumber) {
-        CheckLanguage();
-        if (!classNumber && classNumber !== 0) {
-            console.warn("You need to specify a number corresponding to the class's order place.");
-            return;
-        }
-        const allItems = document.querySelectorAll('.liste-cours > li');
-        let actualIndex = 0;
-
-        for (let i = 0; i < allItems.length; i++) {
-            const item = allItems[i];
-            const noCourse = item.querySelector('.pas-de-cours');
-            const lunch = item.querySelector('.demi-pension');
-            const label = item.querySelector('.libelle-cours');
-
-            if (noCourse || lunch || !label || label.textContent.trim() === '') continue;
-
-            if (classNumber === 0) {
-                toggleCancel(item);
-            }
-
-            actualIndex++;
-
-            if (actualIndex === classNumber) {
-                toggleCancel(item);
-                return;
-            }
-        }
+        const items = document.querySelectorAll('.liste-cours > li');
+        const validItems = Array.from(items).filter(item => !item.querySelector('.pas-de-cours,.demi-pension') && item.querySelector('.libelle-cours')?.textContent.trim());
+        const target = validItems[index === 0 ? 0 : index - 1];
+        if (target) toggleCancel(target);
     };
 
     // weekly view
@@ -328,8 +258,6 @@
         toggleCancelV2(target);
         console.log('Selected class:', target);
     };
-
-    const STORAGE_KEY_V2 = 'cancelledClassesV2';
 
     function getUniqueKeyV2(element) {
         const span = element.querySelector('div.cours-simple').getAttribute('aria-label');

@@ -13,6 +13,11 @@
     const STORAGE_KEY = 'cancelledClasses';
     const STORAGE_KEY_V2 = 'cancelledClassesV2';
 
+    window.ResetStorage = function () {
+        localStorage.removeItem('cancelledClasses');
+        localStorage.removeItem('cancelledClassesV2');
+    }
+
     function GetLanguage() {
         return document.documentElement.lang === "en";
     }
@@ -169,15 +174,6 @@
     startWatching('.liste-cours', () => {
         if (!GetLanguage()) return;
         applySavedCancellations();
-    });
-
-    // Home / navigation clicks watcher
-    startWatching('body', () => {
-        document.querySelectorAll('.icon_angle_left, .icon_angle_right, .icon_fermeture_widget, .themeBoutonSecondaire').forEach(el => {
-            if (el.dataset.patched) return;
-            el.addEventListener('click', applySavedCancellations);
-            el.dataset.patched = 'true';
-        });
     });
 
     // Expose for manual toggling

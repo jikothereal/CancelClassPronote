@@ -195,6 +195,12 @@
         const items = document.querySelectorAll('.liste-cours > li');
         const validItems = Array.from(items).filter(item => !item.querySelector('.pas-de-cours,.demi-pension') && item.querySelector('.libelle-cours')?.textContent.trim());
         const target = validItems[index === 0 ? 0 : index - 1];
+        for (let i = 0; i < validItems.length; i++) {
+            const item = validItems[i];
+            if (index === 0){
+                toggleCancel(item);
+            }
+        }
         if (target) toggleCancel(target);
     };
 

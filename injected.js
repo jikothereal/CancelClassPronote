@@ -13,6 +13,19 @@
     const STORAGE_KEY = 'cancelledClasses';
     const STORAGE_KEY_V2 = 'cancelledClassesV2';
 
+    window.average = function () {
+        let turns = 0;
+        let avg = 0.0;
+        document.querySelectorAll(".SansMain.liste_fixed.liste-focus-grid > div").forEach(item => {
+            const ne = item.querySelector('div.ie-titre-gros');
+            if (!ne) return;
+            turns += 1;
+            const t = parseFloat(ne.textContent.trim().replace(',', '.'));
+            avg += t;
+        });
+        console.log((avg/turns).toPrecision(4));
+    }
+
     window.ResetStorage = function () {
         localStorage.removeItem('cancelledClasses');
         localStorage.removeItem('cancelledClassesV2');

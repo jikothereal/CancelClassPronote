@@ -62,7 +62,7 @@
     }
 
     function getSaved(key, storageKey) {
-        return JSON.parse(localStorage.getItem(storageKey) || '{}')[key] || null;
+        return JSON.parse(localStorage.getItem(storageKey) || '{}')[key]
     }
 
     function saveData(key, value, storageKey) {
@@ -135,7 +135,7 @@
 
         if (isCancelled) {
             const saved = getSaved(key, STORAGE_KEY);
-            if (saved) {
+            if (saved !== null) {
                 container.innerHTML = saved;
                 item.classList.remove("cours-annule");
                 removeData(key, STORAGE_KEY);

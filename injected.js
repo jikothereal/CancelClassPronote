@@ -201,7 +201,7 @@
                 toggleCancel(item);
             }
         }
-        if (target) toggleCancel(target);
+        if (target && index !== 0) toggleCancel(target);
     };
 
     // weekly view

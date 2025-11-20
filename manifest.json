@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Pronote Class Canceller",
-  "version": "1.1",
+  "version": "2.1",
   "description": "cancels a class in Pronote (client sided!). Saves the cancelled classes so refreshing, changing page or section doesn't remove the cs cancelled class (puts it back on as soon as the daily timeable view loads in)",
   "content_scripts": [
     {

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Pronote Class Cancellation
 // @namespace    http://tampermonkey.net/
-// @version      2.0
+// @version      2.1
 // @description  Toggle class cancellation.
 // @match        *://*/*
 // @grant        none

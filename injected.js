@@ -10,6 +10,7 @@
 (function () {
     'use strict';
 
+    // start selecting from here if you use raw script instead of extension
     const STORAGE_KEY = 'cancelledClasses';
     const STORAGE_KEY_V2 = 'cancelledClassesV2';
 
@@ -189,15 +190,15 @@
         applySavedCancellations();
     });
 
-    // Expose for manual toggling
+    // daily view
     window.CancelClass = function (index) {
         CheckLanguage();
         const items = document.querySelectorAll('.liste-cours > li');
         const validItems = Array.from(items).filter(item => !item.querySelector('.pas-de-cours,.demi-pension') && item.querySelector('.libelle-cours')?.textContent.trim());
         const target = validItems[index === 0 ? 0 : index - 1];
-        for (let i = 0; i < validItems.length; i++) {
-            const item = validItems[i];
-            if (index === 0){
+        if (index === 0) {
+            for (let i = 0; i < validItems.length; i++) {
+                const item = validItems[i];
                 toggleCancel(item);
             }
         }
@@ -271,7 +272,6 @@
 
         const target = validClasses[period - 1];
         toggleCancelV2(target);
-        console.log('Selected class:', target);
     };
 
     function getUniqueKeyV2(element) {
@@ -301,8 +301,15 @@
 
         const table = element.querySelector('table.Cours');
         const existingEtiquette = table.querySelector('.EtiquetteCours');
-        const allDivs = Array.from(table.querySelectorAll('div.NoWrap'));
-        const classroomDiv = allDivs.reverse().find(d => !d.textContent.includes('.') && d.textContent.length <= 4); // like "301" or "207"
+        const allDivs = Array.from(table.tBodies[0].lastChild.querySelectorAll('div.NoWrap'));
+        let height = 0;
+        allDivs.forEach(item => {
+            if (item.style.height && !item.classList.contains('sr-only')) {
+                const s = parseInt(item.style.height);
+                height += s;
+            }
+        });
+        const tHeight = parseInt(element.style.height);
 
         const isAlreadyCancelled = existingEtiquette && existingEtiquette.textContent.includes('Prof. absent');
 
@@ -314,8 +321,9 @@
                 if (saved[key].originalTrHTML) {
                     table.tBodies[0].insertAdjacentHTML('afterbegin', saved[key].originalTrHTML);
                 }
-                if (classroomDiv) {
-                    classroomDiv.className = saved[key].originalClassroomClass;
+                if (saved[key].originalClassroomClass) {
+                    const lastf = allDivs[saved[key].originalClassroomClass];
+                    lastf.classList.remove('sr-only');
                 }
                 removeCancelledClassV2(key);
             }
@@ -329,20 +337,24 @@
         newTr.innerHTML = `
             <td style="height:10px;">
                 <div id="GInterface.Instances[2].Instances[1].Instances[0]_Grille_Elements_statut_17" style="background-color: white; color: rgb(192, 0, 0); height: 13px;" class="EtiquetteCours">
-                    <div class="NoWrap ie-ellipsis" style="margin:0px 1px; position:relative;width:160px;" data-tooltip="ellipsis">Prof. absent</div>
+                    <div class="NoWrap ie-ellipsis" style="margin:0px 1px; position:relative; width:${table.clientWidth - 10}px;" data-tooltip="ellipsis">Prof. absent</div>
                 </div>
             </td>
         `;
+        if (existingEtiquette) {
+            existingEtiquette.parentElement.parentElement.remove();
+        }
         table.tBodies[0].insertBefore(newTr, table.tBodies[0].firstChild);
-
-        // Save and hide classroom
-        const classroomClass = classroomDiv ? classroomDiv.className : null;
-        if (classroomDiv) classroomDiv.className = 'NoWrap sr-only';
+        const indexC = allDivs[allDivs.length -1].classList.contains('sr-only') ? allDivs.length - 2 : allDivs.length - 1;
+        if ((height + 10) > tHeight) {
+            const last = allDivs[indexC];
+            last.classList.add("sr-only");
+        }
 
         saveCancelledClassV2(key, {
             originalTrHTML: existingEtiquette ? etiquetteTr.outerHTML : null,
-            originalClassroomClass: classroomClass
+            originalClassroomClass: (height + 10) > tHeight ? indexC : null
         });
     }
-
+    // stop selecting here if you're using raw script instead of extension
 })();

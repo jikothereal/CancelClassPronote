@@ -208,7 +208,7 @@
     // weekly view
     window.CancelClass2 = function (day, period) {
         const inStudentAdmin = document.querySelector('.item-selected .label-submenu');
-        if (!inStudentAdmin || !inStudentAdmin.textContent.includes('Timetable')) {
+        if (!inStudentAdmin) {
             console.warn('CancelClass2 can only be used in Student Administration > Timetable.');
             return;
         }
@@ -234,7 +234,7 @@
             const monthIndex = monthMap[monthStr];
             if (monthIndex === undefined) return null;
 
-            const date = new Date(2025, monthIndex, dayNum);
+            const date = new Date(getYear(), monthIndex, dayNum);
             const jsDay = date.getDay(); // 0 = Sunday, 1 = Monday, ...
             return jsDay >= 1 && jsDay <= 5 ? jsDay : null; // Only Mon–Fri
         }
@@ -273,6 +273,15 @@
         const target = validClasses[period - 1];
         toggleCancelV2(target);
     };
+
+    function getYear() {
+        const onglet = document.querySelector('span.titre-onglet');
+        if (!onglet) return new Date().getFullYear();
+        const text = onglet.textContent;
+        const match = text.match(/(20\d{2})/);
+        if (match) return parseInt(match[1], 10);
+        return new Date().getFullYear();
+    }
 
     function getUniqueKeyV2(element) {
         const span = element.querySelector('div.cours-simple').getAttribute('aria-label');
@@ -345,15 +354,15 @@
             existingEtiquette.parentElement.parentElement.remove();
         }
         table.tBodies[0].insertBefore(newTr, table.tBodies[0].firstChild);
-        const indexC = allDivs[allDivs.length -1].classList.contains('sr-only') ? allDivs.length - 2 : allDivs.length - 1;
-        if ((height + 10) > tHeight) {
+        let indexC = allDivs.length - 1; while(indexC >= 0 && allDivs[indexC].classList.contains('sr-only')) indexC--;
+        if ((height + 20) > tHeight) {
             const last = allDivs[indexC];
             last.classList.add("sr-only");
         }
 
         saveCancelledClassV2(key, {
             originalTrHTML: existingEtiquette ? etiquetteTr.outerHTML : null,
-            originalClassroomClass: (height + 10) > tHeight ? indexC : null
+            originalClassroomClass: (height + 20) > tHeight ? indexC : null
         });
     }
     // stop selecting here if you're using raw script instead of extension

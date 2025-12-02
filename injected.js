@@ -190,6 +190,10 @@
         applySavedCancellations();
     });
 
+    startWatching('.ObjetGrilleCours', () => {
+        applySavedCancellationsV2();
+    });
+
     // daily view
     window.CancelClass = function (index) {
         CheckLanguage();
@@ -273,6 +277,45 @@
         const target = validClasses[period - 1];
         toggleCancelV2(target);
     };
+
+    function applySavedCancellationsV2() {
+        const saved = getSavedCancellationsV2();
+
+        document.querySelectorAll('.EmploiDuTemps_Element').forEach(element => {
+            const key = getUniqueKeyV2(element);
+            if (!(key in saved)) return;
+
+            const table = element.querySelector('table.Cours');
+            const existingEtiquette = table.querySelector('.EtiquetteCours');
+            const allDivs = Array.from(table.tBodies[0].lastChild.querySelectorAll('div.NoWrap'));
+            let height = 0;
+            allDivs.forEach(item => {
+                if (item.style.height && !item.classList.contains('sr-only')) {
+                    const s = parseInt(item.style.height);
+                    height += s;
+                }
+            });
+            const tHeight = parseInt(element.style.height);
+
+            const newTr = document.createElement('tr');
+            newTr.innerHTML = `
+                <td style="height:10px;">
+                    <div id="GInterface.Instances[2].Instances[1].Instances[0]_Grille_Elements_statut_17" style="background-color: white; color: rgb(192, 0, 0); height: 13px;" class="EtiquetteCours">
+                        <div class="NoWrap ie-ellipsis" style="margin:0px 1px; position:relative; width:${table.clientWidth - 10}px;" data-tooltip="ellipsis">Prof. absent</div>
+                    </div>
+                </td>
+            `;
+            if (existingEtiquette) {
+                existingEtiquette.parentElement.parentElement.remove();
+            }
+            table.tBodies[0].insertBefore(newTr, table.tBodies[0].firstChild);
+            let indexC = allDivs.length - 1; while(indexC >= 0 && allDivs[indexC].classList.contains('sr-only')) indexC--;
+            if ((height + 20) > tHeight) {
+                const last = allDivs[indexC];
+                last.classList.add("sr-only");
+            }
+        });
+    }
 
     function getYear() {
         const onglet = document.querySelector('span.titre-onglet');

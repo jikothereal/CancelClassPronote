@@ -190,6 +190,7 @@
         applySavedCancellations();
     });
 
+    // weekly classes watcher
     startWatching('.ObjetGrilleCours', () => {
         applySavedCancellationsV2();
     });
@@ -217,8 +218,8 @@
             return;
         }
 
-        if (day < 1 || day > 5) {
-            console.warn('Day must be between 1 (Monday) and 5 (Friday).');
+        if (day < 0 || day > 5) {
+            console.warn('Day must be between 1 (Monday) and 5 (Friday) (or 0 for all).');
             return;
         }
 
@@ -248,7 +249,8 @@
 
         allClasses.forEach(el => {
             const jsDay = getDayOfWeekFromElement(el);
-            if (jsDay && groupedByDay[jsDay]) {
+            const invisible = el.classList.contains('cours-invisible');
+            if (jsDay && groupedByDay[jsDay] && !invisible) {
                 groupedByDay[jsDay].push(el);
             }
         });
@@ -269,11 +271,18 @@
             return;
         }
 
-        if (period < 1 || period > validClasses.length) {
-            console.warn(`Period must be between 1 and ${validClasses.length} for day ${day}.`);
+        if (period < 0 || period > validClasses.length) {
+            console.warn(`Period must be between 1 and ${validClasses.length} for day ${day}. (or 0 for all)`);
             return;
         }
 
+        if (period === 0) {
+            for (let i = 0; i < validClasses.length; i++) {
+                const item = validClasses[i];
+                toggleCancelV2(item);
+            }
+            return;
+        }
         const target = validClasses[period - 1];
         toggleCancelV2(target);
     };

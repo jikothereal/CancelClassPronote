@@ -255,7 +255,20 @@
             }
         });
 
-        const classesOfDay = groupedByDay[day];
+        let classesOfDay = null;
+        if (day === 0) {
+            if (period !== 0) {
+                classesOfDay = [1,2,3,4,5].map(d => groupedByDay[d][period - 1]).filter(Boolean);
+                for (let i = 0; i < classesOfDay.length; i++) {
+                    toggleCancelV2(classesOfDay[i]);
+                }
+                return;
+            }
+            classesOfDay = groupedByDay[1].concat(groupedByDay[2], groupedByDay[3], groupedByDay[4], groupedByDay[5]);
+        } else {
+            classesOfDay = groupedByDay[day];
+        }
+
         if (!classesOfDay || classesOfDay.length === 0) {
             console.warn(`No classes found for day ${day}.`);
             return;

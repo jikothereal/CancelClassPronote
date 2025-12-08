@@ -136,7 +136,7 @@
 
         if (isCancelled) {
             const saved = getSaved(key, STORAGE_KEY);
-            if (saved !== null) {
+            if (saved !== null && saved !== undefined) {
                 container.innerHTML = saved;
                 item.classList.remove("cours-annule");
                 removeData(key, STORAGE_KEY);
